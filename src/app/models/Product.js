@@ -8,7 +8,7 @@ class Product extends Model {
         price: Sequelize.INTEGER,
         path: Sequelize.STRING,
         offer: Sequelize.BOOLEAN,
-        description: Sequelize.TEXT,
+        description: Sequelize.STRING,
         available: Sequelize.BOOLEAN,
         sold_count: Sequelize.INTEGER,
         rating_average: Sequelize.FLOAT,

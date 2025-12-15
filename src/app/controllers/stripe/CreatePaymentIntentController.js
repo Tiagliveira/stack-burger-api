@@ -4,49 +4,55 @@ import 'dotenv/config';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-const calculateOrderAmount = (items) => {
-  const total = items.reduce((acc, current) => {
-    return current.price * current.quantity + acc;
+const calculateOrderAmount = (items, deliveryFee) => {
+  const productsTotal = items.reduce((acc, current) => {
+    const price = Number(current.price);
+    const quantity = Number(current.quantity);
+    return price * quantity + acc;
   }, 0);
-  return total;
+
+  const fee = Number(deliveryFee) || 0;
+
+  const total = productsTotal + fee;
+
+  return Math.round(total);
 };
 
 class CreatePaymentIntentController {
   async store(request, response) {
     const schema = Yup.object({
-      products: Yup.array()
-        .required()
-        .of(
-          Yup.object({
-            id: Yup.number().required(),
-            quantity: Yup.number().required(),
-            price: Yup.number().required(),
-          }),
-        ),
+      products: Yup.array().required(),
+      deliveryFee: Yup.number(),
     });
 
     try {
-      schema.validateSync(request.body, { abortEarly: false, strict: true });
+      schema.validateSync(request.body, { abortEarly: false });
     } catch (err) {
       return response.status(400).json({ error: err.errors });
     }
 
-    const { products } = request.body;
+    const { products, deliveryFee } = request.body;
 
-    const amount = calculateOrderAmount(products);
+    const amount = calculateOrderAmount(products, deliveryFee);
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: 'brl',
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
+    try {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: 'brl',
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
 
-    response.json({
-      clientSecret: paymentIntent.client_secret,
-      dpmCheckerLink: `https://dashboard.stripe.com/settings/payment_methods/review?transaction_id=${paymentIntent.id}`,
-    });
+      return response.json({
+        clientSecret: paymentIntent.client_secret,
+        dpmCheckerLink: `https://dashboard.stripe.com/settings/payment_methods/review?transaction_id=${paymentIntent.id}`,
+      });
+    } catch (err) {
+      console.error('Erro no Stripe:', err.message);
+      return response.status(400).json({ error: err.message });
+    }
   }
 }
+
 export default new CreatePaymentIntentController();

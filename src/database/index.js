@@ -6,8 +6,9 @@ import User from '../app/models/User.js';
 import databaseConfig from '../config/database.cjs';
 import 'dotenv/config';
 import DeliveryTax from '../app/models/DeliveryTax.js';
+import Expense from '../app/models/Expense.js';
 
-const models = [User, Product, Category, DeliveryTax];
+const models = [User, Product, Category, DeliveryTax, Expense];
 
 class Database {
   constructor() {

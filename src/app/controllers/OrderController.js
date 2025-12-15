@@ -20,6 +20,7 @@ class OrderController {
       observation: Yup.string(),
       paymentMethod: Yup.string().required(),
       orderType: Yup.string().oneOf(['delivery', 'takeout']).required(),
+
       paymentId: Yup.string().when('paymentMethod', (paymentMethod, schema) => {
         return paymentMethod === 'card' ? schema.required() : schema;
       }),
@@ -33,13 +34,9 @@ class OrderController {
             observation: Yup.string(),
           }),
         ),
-      cep: Yup.string().when('orderType', (orderType, schema) => {
-        return orderType === 'delivery' ? schema.required() : schema;
-      }),
-      address: Yup.object().when('orderType', (orderType, schema) => {
-        if (orderType === 'takout') return schema;
 
-        return schema.shape({
+      address: Yup.object()
+        .shape({
           cep: Yup.string().required(),
           street: Yup.string().required(),
           number: Yup.string().required(),
@@ -47,12 +44,14 @@ class OrderController {
           city: Yup.string().required(),
           complement: Yup.string(),
         })
-
-      })
+        .required(),
     });
 
     try {
-      schema.validateSync(request.body, { abortEarly: false, strict: true });
+      await schema.validateSync(request.body, {
+        abortEarly: false,
+        strict: true,
+      });
     } catch (err) {
       return response.status(400).json({ error: err.errors });
     }
@@ -70,19 +69,18 @@ class OrderController {
     let deliveryFee = 0;
 
     if (orderType === 'delivery') {
-      const cepNuber = address.cep.replace(/\D/g, '');
+      const cepNumber = address.cep.replace(/\D/g, '');
 
       const taxRule = await DeliveryTax.findOne({
         where: {
-          zip_code_start: { [Op.lte]: cepNuber },
-          zip_code_end: { [Op.gte]: cepNuber },
+          zip_code_start: { [Op.lte]: cepNumber },
+          zip_code_end: { [Op.gte]: cepNumber },
         },
       });
 
       if (!taxRule) {
         return response.status(400).json({
-          error:
-            'Ops! Esse endereço est fora da nossa de Entrega. Obrigado pela compreensão.',
+          error: 'Ops! Esse endereço está fora da nossa área de Entrega.',
         });
       }
 
@@ -119,6 +117,12 @@ class OrderController {
       return newProduct;
     });
 
+    const totalProducts = mapedProducts.reduce((acc, product) => {
+      return acc + product.price * product.quantity;
+    }, 0);
+
+    const totalOrder = totalProducts + (deliveryFee || 0);
+
     const order = {
       user: {
         id: userId,
@@ -127,13 +131,13 @@ class OrderController {
       products: mapedProducts,
       status: 'CREATED',
       observation: orderObservation,
-
       paymentId,
       paymentMethod,
-
       orderType,
       address,
       deliveryFee,
+
+      total: totalOrder,
     };
 
     const newOrder = await Order.create(order);
@@ -153,6 +157,7 @@ class OrderController {
     } catch (err) {
       return response.status(400).json({ error: err.errors });
     }
+
     const { status } = request.body;
     const { id } = request.params;
 
@@ -193,7 +198,6 @@ class OrderController {
 
   async index(_request, response) {
     const orders = await Order.find();
-
     return response.status(200).json(orders);
   }
 
@@ -222,15 +226,16 @@ class OrderController {
         'DELIVERED',
         'CANCELED',
       ];
+
       if (uncancelableStatus.includes(order.status)) {
         return response.status(400).json({
           error:
-            'Pedido ja está em andamento ou Finalizado e não pode ser cancelado.',
+            'Pedido já está em andamento ou Finalizado e não pode ser cancelado.',
         });
       }
+
       const timeNow = new Date();
       const timeOrder = new Date(order.createdAt);
-
       const diffInMinutes = (timeNow - timeOrder) / 1000 / 60;
 
       if (diffInMinutes > 30) {
@@ -238,9 +243,10 @@ class OrderController {
           .status(400)
           .json({ error: 'Tempo limite de cancelamento (30 min) expirado' });
       }
+
       await Order.updateOne({ _id: id }, { status: 'CANCELED' });
 
-      return response.json({ message: 'Pedido Cnacelado com sucesso.' });
+      return response.json({ message: 'Pedido Cancelado com sucesso.' });
     } catch (err) {
       return response.status(400).json({ error: err.message });
     }
@@ -259,7 +265,6 @@ class OrderController {
 
     const { id } = request.params;
     const { text } = request.body;
-
     const { userName } = request;
 
     try {
@@ -274,17 +279,17 @@ class OrderController {
         text,
         createdAt: new Date(),
       };
-      order.messages.push(newMessage);
 
+      order.messages.push(newMessage);
       await order.save();
 
-      request.io.to(id).emit('new-order_message', {
+      request.io.emit('new_order_message', {
         orderId: id,
         message: newMessage,
       });
 
       return response.json({
-        message: 'Mesnagem enviada',
+        message: 'Mensagem enviada',
         chat: order.messages,
       });
     } catch (err) {
@@ -331,13 +336,14 @@ class OrderController {
           await product.save();
         }
       });
+
       await Promise.all(updatePromises);
       order.isRated = true;
       await order.save();
 
       return response
         .status(200)
-        .json({ message: 'Avliação enviada com sucesso!' });
+        .json({ message: 'Avaliação enviada com sucesso!' });
     } catch (err) {
       return response.status(400).json({ error: err.message });
     }

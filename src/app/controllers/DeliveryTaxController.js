@@ -31,13 +31,12 @@ class DeliveryTaxController {
       return response.status(400).json({ error: err.errors });
     }
 
-    const cep = request.body;
+    const { cep } = request.body;
 
     const cepNumber = Number(cep.replace(/\D/g, ''));
-
     try {
       const tax = await DeliveryTax.findOne({
-        wherw: {
+        where: {
           zip_code_start: { [Op.lte]: cepNumber },
           zip_code_end: { [Op.gte]: cepNumber },
         },

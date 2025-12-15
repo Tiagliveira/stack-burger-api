@@ -6,7 +6,9 @@ import 'dotenv/config';
 
 import './jobs/AutoFinishOrders.js';
 
-const port = process.env.APP_PORT || 3001;
+const port = process.env.APP_PORT;
+const allowedOrigins = process.env.CORS_ORIGINS;
+process.env.CORS_ORIGINS.split(',');
 
 const server = app.listen(port, () => {
   console.log(`Application running on port ${port}`);
@@ -14,7 +16,7 @@ const server = app.listen(port, () => {
 
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: allowedOrigins,
     credentials: true,
   },
 });

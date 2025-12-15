@@ -9,7 +9,7 @@ class ProductController {
       price: Yup.number().required(),
       category_id: Yup.number().required(),
       offer: Yup.boolean(),
-      description: Yup.TEXT().required(),
+      description: Yup.string().required(),
       available: Yup.boolean(),
     });
 
@@ -42,7 +42,7 @@ class ProductController {
       price: Yup.number(),
       category_id: Yup.number(),
       offer: Yup.boolean(),
-      description: Yup.text(),
+      description: Yup.string(),
       available: Yup.boolean(),
     });
 

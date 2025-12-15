@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import multer from 'multer';
 import CategoryController from './app/controllers/CategoryController.js';
+import DashboardController from './app/controllers/DashboardController.js';
 import DeliveryTaxController from './app/controllers/DeliveryTaxController.js';
+import ExpenseController from './app/controllers/ExpenseController.js';
 import OrderController from './app/controllers/OrderController.js';
 import ProductController from './app/controllers/ProductController.js';
 import SessionController from './app/controllers/SessionController.js';
@@ -61,7 +63,12 @@ routes.post('/create_payment_intent', CreatePaymentIntentController.store);
 
 routes.post('/delivery-calculate', DeliveryTaxController.calculate);
 
-routes.post('/delivery_taxes', adminMiddleware, DeliveryTaxController.store);
+routes.post('/delivery-taxes', adminMiddleware, DeliveryTaxController.store);
 routes.get('/delivery-taxes', adminMiddleware, DeliveryTaxController.index);
+
+routes.get('/dashboard', adminMiddleware, DashboardController.index);
+routes.get('/dashboard/reports', adminMiddleware, DashboardController.reports);
+
+routes.post('/expenses', adminMiddleware, ExpenseController.store);
 
 export default routes;

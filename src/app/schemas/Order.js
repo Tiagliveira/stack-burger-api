@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { number } from 'yup';
 
 const OrderSchema = new mongoose.Schema(
   {
@@ -57,7 +56,7 @@ const OrderSchema = new mongoose.Schema(
     },
     paymentId: {
       type: String,
-      required: false,
+      required: true,
     },
     isRated: {
       type: Boolean,
@@ -71,15 +70,41 @@ const OrderSchema = new mongoose.Schema(
     },
     deliveryFee: {
       type: Number,
+      required: true,
+      default: 0,
     },
+
+    total: {
+      type: Number,
+      required: true,
+    },
+
     address: {
-      cep: {type: String},
-      street: { type: String},
-      number: { type: String},
-      neighborhood: { type: String},
-      city: { type: String},
-      complement: { type: String},
+      cep: {
+        type: String,
+        required: true,
+      },
+      street: {
+        type: String,
+        required: true,
+      },
+      number: {
+        type: String,
+        required: true,
+      },
+      neighborhood: {
+        type: String,
+        required: true,
+      },
+      city: {
+        type: String,
+        required: true,
+      },
+      complement: {
+        type: String,
+      },
     },
+
     messages: [
       {
         userName: {
