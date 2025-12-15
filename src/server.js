@@ -2,7 +2,6 @@ import { Server } from 'socket.io';
 import app from './app.js';
 import routes from './routes.js';
 import './database/index.js';
-import 'dotenv/config';
 
 import './jobs/AutoFinishOrders.js';
 
