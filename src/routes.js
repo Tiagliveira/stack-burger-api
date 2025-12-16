@@ -19,9 +19,11 @@ const upload = multer(multerConfig);
 
 routes.post('/users', UserController.store);
 routes.post('/sessions', SessionController.store);
+routes.get('/products', ProductController.index);
+routes.get('/categories', CategoryController.index);
 
 routes.use(authMiddleware);
-routes.get('/products', ProductController.index);
+
 routes.post(
   '/products',
   adminMiddleware,
@@ -49,7 +51,6 @@ routes.put(
   upload.single('file'),
   CategoryController.update,
 );
-routes.get('/categories', CategoryController.index);
 
 routes.post('/orders', OrderController.store);
 routes.get('/orders', adminMiddleware, OrderController.index);
