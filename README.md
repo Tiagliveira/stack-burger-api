@@ -1,47 +1,82 @@
-# 🍔 Stack Burger API
+# 🍔 Stack Burger API - Backend Service
 
-API desenvolvida para o sistema de pedidos de uma hamburgueria fictícia. Este backend gerencia usuários, autenticação, pedidos, produtos e painel administrativo. O projeto foi criado com foco em segurança, escalabilidade e boas práticas de arquitetura.
+![NodeJS](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
+![Express.js](https://img.shields.io/badge/Express.js-404D59?style=for-the-badge)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Socket.io](https://img.shields.io/badge/Socket.io-010101?style=for-the-badge&logo=socket.io&logoColor=white)
+
+> **API Restful robusta para gestão de pedidos, usuários e pagamentos em tempo real.**
+
+Este backend serve como o núcleo da aplicação **Stack Burger**, orquestrando regras de negócio complexas, comunicação em tempo real via WebSockets e processamento de pagamentos. A arquitetura foi desenhada para ser escalável, segura e agnóstica ao front-end.
+
+[Repositório do Front-End (Interface)](https://github.com/Tiagliveira/stack-burger-interface)
+
+---
+
+##  Diferenciais Técnicos & Arquitetura
+
+### 1. Banco de Dados Híbrido (SQL + NoSQL)
+A aplicação utiliza uma abordagem estratégica de persistência:
+- **PostgreSQL (via Sequelize):** Para dados estruturados e relacionais que exigem integridade rígida (Usuários, Produtos, Categorias).
+- **MongoDB (via Mongoose):** Para dados voláteis e de alta frequência de escrita, como o histórico e status dos **Pedidos**, garantindo performance na leitura/escrita.
+
+### 2. Comunicação Real-Time (Socket.io)
+Implementação de WebSockets para criar um canal bidirecional entre Cliente e Cozinha.
+- **Evento:** Quando um pedido muda de status no Admin, o cliente recebe a atualização instantaneamente sem *polling*.
+- **Otimização:** Redução drástica de requisições HTTP desnecessárias ao servidor.
+
+### 3. Segurança e ACL (Access Control List)
+- **JWT (JSON Web Token):** Autenticação stateless segura.
+- **RBAC (Role-Based Access Control):** Middlewares personalizados (`isAdmin`) que blindam rotas sensíveis. Apenas usuários com privilégio de administrador podem criar produtos ou ver métricas.
+- **Bcrypt:** Hashing de senhas antes da persistência.
+
+### 4. Pagamentos (Fintech)
+- Integração com **Stripe API**.
+- Criação de **Webhooks** para escutar eventos de pagamento e atualizar o status do pedido no banco de dados automaticamente após a confirmação bancária.
+
+---
 
 ## Tecnologias Utilizadas
 
-- **Node.js & Express** – Backend em JavaScript com rotas e middlewares
-- **Arquitetura MVC** – Separação clara entre Model, View e Controller
-- **Sequelize & PostgreSQL** – ORM para banco de dados relacional
-- **Mongoose & MongoDB** – ORM para banco de dados NoSQL
-- **JWT** – Autenticação segura via token
-- **Yup** – Validação de dados
-- **bcryptjs** – Criptografia de senhas
-- **Docker** – Padronização de ambiente
-- **EJS** – Templates dinâmicos para renderização de páginas
+- **Core:** Node.js & Express
+- **ORM/ODM:** Sequelize & Mongoose
+- **Validação:** Yup (Schema Validation para entradas da API)
+- **Infraestrutura:** Docker & Docker Compose
+- **Utilitários:** Multer (Uploads), Cors, Dotenv
 
-## Funcionalidades
+---
 
-- Cadastro, login e autenticação de usuários
-- Upload de avatar via URL
-- CRUD de produtos e pedidos
-- Painel administrativo com rotas protegidas
-- Validação de dados e criptografia de senhas
-- Deploy com Render
+## Como Rodar Localmente
 
-## Front-End (em construção)
+### Pré-requisitos
+- Docker e Docker Compose instalados (Recomendado)
+- Node.js v18+
 
-O front-end está sendo desenvolvido com React.js e será integrado em breve.
+### Passo a Passo
 
-🔗 [Repositório do Front-End](https://github.com/Tiagliveira/stack-burger-interface)
-
-## Como rodar localmente
-
+1. **Clone o repositório**
 ```bash
-# Clone o repositório
-git clone https://github.com/Tiagliveira/stack-burger-api
-
-# Acesse a pasta
+git clone [https://github.com/Tiagliveira/stack-burger-api](https://github.com/Tiagliveira/stack-burger-api)
 cd stack-burger-api
 
-# Instale as dependências
+### Instale as dependências
 npm install
+# ou
+pnpm install
 
-# Configure as variáveis de ambiente (.env)
-
-# Inicie o servidor
+Inicie o Servidor
 pnpm dev
+# O servidor rodará na porta 3001 (padrão)
+```
+
+## Deploy & Infraestrutura
+A API está operando em produção em uma VPS Linux, gerenciada via Easypanel.
+
+O processo de deploy utiliza Dockerfiles otimizados para Node.js.
+
+Nginx atua como Proxy Reverso gerenciando o tráfego e SSL.
+
+## Autor
+Desenvolvido por Tiago Oliveira.
