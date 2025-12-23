@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import { resolve } from 'node:path';
+import sharp from 'sharp';
 import * as Yup from 'yup';
 import Category from '../models/Category.js';
 
@@ -14,23 +17,50 @@ class CategoryController {
     }
 
     const { name } = request.body;
-    const { filename } = request.file;
+
+    let filenameFinal = '';
+
+    if (request.file) {
+      const {
+        filename: filenameOriginal,
+        path: pathOriginal,
+        destination,
+      } = request.file;
+
+      const novoNome = `${filenameOriginal.split('.')[0]}.webp`;
+      const pathFinal = resolve(destination, novoNome);
+
+      try {
+        await sharp(pathOriginal)
+          .resize(800)
+          .webp({ quality: 80 })
+          .toFile(pathFinal);
+
+        fs.unlinkSync(pathOriginal);
+
+        filenameFinal = novoNome;
+      } catch (err) {
+        console.error('Erro ao otimizar categoria:', err);
+        filenameFinal = filenameOriginal;
+      }
+    }
 
     const existingCategory = await Category.findOne({
       where: { name },
     });
 
     if (existingCategory) {
-      return response.status(400).json({ error: 'Category alreadi exists' });
+      return response.status(400).json({ error: 'Category already exists' });
     }
 
     const newCategory = await Category.create({
       name,
-      path: filename,
+      path: filenameFinal,
     });
 
     return response.status(201).json({ newCategory });
   }
+
   async update(request, response) {
     const schema = Yup.object({
       name: Yup.string(),
@@ -46,17 +76,38 @@ class CategoryController {
     const { id } = request.params;
 
     let path;
+
     if (request.file) {
-      const { filename } = request.file;
-      path = filename;
+      const {
+        filename: filenameOriginal,
+        path: pathOriginal,
+        destination,
+      } = request.file;
+
+      const novoNome = `${filenameOriginal.split('.')[0]}.webp`;
+      const pathFinal = resolve(destination, novoNome);
+
+      try {
+        await sharp(pathOriginal)
+          .resize(800)
+          .webp({ quality: 80 })
+          .toFile(pathFinal);
+
+        fs.unlinkSync(pathOriginal);
+        path = novoNome;
+      } catch (err) {
+        console.error('Erro ao otimizar categoria no update:', err);
+        path = filenameOriginal;
+      }
     }
+    if (name) {
+      const existingCategory = await Category.findOne({
+        where: { name },
+      });
 
-    const existingCategory = await Category.findOne({
-      where: { name },
-    });
-
-    if (existingCategory) {
-      return response.status(400).json({ error: 'Category alreadi exists' });
+      if (existingCategory && existingCategory.id !== Number(id)) {
+        return response.status(400).json({ error: 'Category already exists' });
+      }
     }
 
     await Category.update(
@@ -71,8 +122,9 @@ class CategoryController {
       },
     );
 
-    return response.status(201).json();
+    return response.status(200).json();
   }
+
   async index(_request, response) {
     const categories = await Category.findAll();
 

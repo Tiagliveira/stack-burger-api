@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import { resolve } from 'node:path';
+import sharp from 'sharp';
 import * as Yup from 'yup';
 import Category from '../models/Category.js';
 import Product from './../models/Product.js';
@@ -21,13 +24,38 @@ class ProductController {
 
     const { name, price, category_id, offer, description, available } =
       request.body;
-    const { filename } = request.file;
+
+    let filenameFinal = '';
+
+    if (request.file) {
+      const {
+        filename: filenameOriginal,
+        path: pathOriginal,
+        destination,
+      } = request.file;
+      const novoNome = `${filenameOriginal.split('.')[0]}.webp`;
+      const pathFinal = resolve(destination, novoNome);
+
+      try {
+        await sharp(pathOriginal)
+          .resize(800)
+          .webp({ quality: 80 })
+          .toFile(pathFinal);
+
+        fs.unlinkSync(pathOriginal);
+
+        filenameFinal = novoNome;
+      } catch (err) {
+        console.error('Erro ao otimizar imagem:', err);
+        filenameFinal = filenameOriginal;
+      }
+    }
 
     const newProduct = await Product.create({
       name,
       price,
       category_id,
-      path: filename,
+      path: filenameFinal,
       offer,
       description,
       available,
@@ -56,10 +84,35 @@ class ProductController {
       request.body;
     const { id } = request.params;
 
+    const product = await Product.findByPk(id);
+    if (!product) {
+      return response.status(404).json({ error: 'Product not found' });
+    }
+
     let path;
+
     if (request.file) {
-      const { filename } = request.file;
-      path = filename;
+      const {
+        filename: filenameOriginal,
+        path: pathOriginal,
+        destination,
+      } = request.file;
+
+      const novoNome = `${filenameOriginal.split('.')[0]}.webp`;
+      const pathFinal = resolve(destination, novoNome);
+
+      try {
+        await sharp(pathOriginal)
+          .resize(800)
+          .webp({ quality: 80 })
+          .toFile(pathFinal);
+
+        fs.unlinkSync(pathOriginal);
+        path = novoNome;
+      } catch (err) {
+        console.error('Erro ao otimizar imagem no update:', err);
+        path = filenameOriginal;
+      }
     }
 
     await Product.update(
@@ -73,9 +126,7 @@ class ProductController {
         available,
       },
       {
-        where: {
-          id,
-        },
+        where: { id },
       },
     );
 
@@ -128,8 +179,11 @@ class ProductController {
       const product = await Product.findByPk(id);
 
       if (!product) {
-        return response.status(400).json({ error: 'Produto não encontardo' });
+        return response.status(400).json({ error: 'Produto não encontrado' });
       }
+
+      const currentCount = product.rating_count || 0;
+      const currentAvg = product.rating_average || 0;
 
       const newCount = currentCount + 1;
       const newAvg = (currentAvg * currentCount + stars) / newCount;
