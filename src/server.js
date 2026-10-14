@@ -6,8 +6,11 @@ import './database/index.js';
 import './jobs/AutoFinishOrders.js';
 
 const port = process.env.APP_PORT;
-const allowedOrigins = process.env.CORS_ORIGINS;
-process.env.CORS_ORIGINS.split(',');
+
+// Trata a variável de origens com segurança
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
+  : '*';
 
 const server = app.listen(port, () => {
   console.log(`Application running on port ${port}`);
